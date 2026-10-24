@@ -3,82 +3,134 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#020617">
-  <title>NewsWorld — خريطة الأخبار الحية</title>
-
+  <meta name="theme-color" content="#101a29">
+  <meta name="description" content="NewsWorld غرفة أخبار عربية تفاعلية تجمع عناوين من مصادرها الأصلية وتعرض الأحداث الجغرافية والبث الرسمي للقنوات.">
+  <title>NewsWorld — غرفة الأخبار الحية</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.js"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-  <div id="map"></div>
-
-  <!-- شريط علوي زجاجي -->
-  <header class="glass top-bar">
-    <div class="brand">
-      <span class="pulse-dot"></span>
-      <h1>NewsWorld</h1>
-      <span class="live-tag">LIVE</span>
+  <main class="app-shell">
+    <div class="map-stage" aria-label="خريطة الأحداث العالمية">
+      <div id="map" aria-label="خريطة تفاعلية للأحداث الجغرافية"></div>
+      <div class="map-shade" aria-hidden="true"></div>
+      <div class="map-info glass">
+        <span class="map-info-icon" aria-hidden="true">◎</span>
+        <span><strong id="map-count">0</strong><small>نقطة مرصودة</small></span>
+      </div>
+      <p class="map-disclaimer glass">مؤشرات التغطية تقريبية ولا تمثل سجلاً شاملاً للأحداث</p>
     </div>
 
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
-      </svg>
-      <input id="search" placeholder="ابحث في الأخبار والأماكن…" autocomplete="off">
+    <header class="topbar glass">
+      <a class="brand" href="./" aria-label="NewsWorld الصفحة الرئيسية">
+        <span class="brand-mark" aria-hidden="true"><span>NW</span><i></i></span>
+        <span class="brand-copy"><strong>NewsWorld</strong><small>غرفة الأخبار</small></span>
+      </a>
+
+      <div class="health-pill" title="حالة اتصال المصادر">
+        <span class="health-dot" id="health-dot" aria-hidden="true"></span>
+        <span id="health-label">جارٍ الاتصال بالمصادر</span>
+      </div>
+
+      <label class="search-box" for="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <input id="search" type="search" placeholder="ابحث في العناوين والأماكن…" autocomplete="off" aria-label="بحث في الأخبار والأحداث">
+        <kbd>/</kbd>
+      </label>
+
+      <div class="top-actions">
+        <button id="btn-tv" class="action-button tv-action" type="button" aria-label="فتح البث المباشر للقنوات" title="بث القنوات">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="13" rx="2"></rect><path d="m8 22 4-4 4 4M8 2l4 3 4-3"></path></svg>
+          <span>البث المباشر</span>
+        </button>
+        <button id="btn-theme" class="action-button icon-only" type="button" aria-label="تبديل المظهر" aria-pressed="false" title="تبديل المظهر">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+        </button>
+        <button id="btn-refresh" class="action-button icon-only" type="button" aria-label="تحديث الأخبار والأحداث" title="تحديث الآن">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"></path><path d="M5.6 9a7 7 0 0 1 11.8-2L20 12M4 12l2.6 5a7 7 0 0 0 11.8-2"></path></svg>
+        </button>
+        <button id="btn-panel" class="action-button icon-only panel-toggle" type="button" aria-label="إخفاء لوحة الأخبار" aria-expanded="true" title="إظهار أو إخفاء الأخبار">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="ticker glass" aria-label="أحدث العناوين">
+      <span class="ticker-label"><i aria-hidden="true"></i> آخر العناوين</span>
+      <div class="ticker-window" id="ticker" aria-live="polite"><span class="ticker-empty">بانتظار تحديث المصادر</span></div>
+    </section>
+
+    <aside class="side-panel glass" id="panel" aria-label="لوحة الأخبار والأحداث">
+      <div class="panel-heading">
+        <div>
+          <div class="section-eyebrow"><span class="eyebrow-line"></span> موجز العالم</div>
+          <h1 id="panel-title">آخر الأخبار</h1>
+          <p id="panel-caption">عناوين من ناشرين ومصادر أصلية</p>
+        </div>
+        <button id="panel-close" class="panel-close" type="button" aria-label="إخفاء لوحة الأخبار">×</button>
+      </div>
+
+      <div class="panel-metrics">
+        <span><b id="headline-count">0</b><small>عنواناً</small></span>
+        <span class="metric-divider"></span>
+        <span><b id="events-count">0</b><small>حدثاً جغرافياً</small></span>
+        <span class="freshness" id="freshness" data-tone="neutral">لم يتم التحديث بعد</span>
+      </div>
+
+      <div class="panel-tabs" id="panel-tabs" role="tablist" aria-label="نوع المحتوى">
+        <button class="is-active" id="tab-news" type="button" data-tab="news" role="tab" aria-selected="true" aria-controls="panel-body">الأخبار <span id="news-count">0</span></button>
+        <button id="tab-events" type="button" data-tab="events" role="tab" aria-selected="false" aria-controls="panel-body">الأحداث <span id="events-count-tab">خريطة</span></button>
+      </div>
+
+      <nav class="filter-bar" id="filters" aria-label="تصفية المحتوى"></nav>
+      <div class="source-status" id="source-status" aria-label="حالة كل مصدر"></div>
+
+      <div class="panel-body" id="panel-body" role="tabpanel" aria-labelledby="tab-news" tabindex="0" aria-live="polite" aria-busy="true">
+        <div class="loading-state" id="loader"><span class="loader-ring" aria-hidden="true"></span><span>جارٍ جلب أحدث المواد من المصادر…</span></div>
+      </div>
+      <div class="panel-footnote">المحتوى والروابط ملك لناشريها الأصليين. افتح الخبر من موقع المصدر.</div>
+    </aside>
+
+    <div class="map-legend glass" aria-label="دليل ألوان طبقات الخريطة">
+      <span><i style="--legend:#f05262"></i>نزاعات</span>
+      <span><i style="--legend:#c27cf2"></i>احتجاجات</span>
+      <span><i style="--legend:#f4aa53"></i>زلازل</span>
+      <span><i style="--legend:#42b8a8"></i>كوارث</span>
+      <span><i style="--legend:#63b8ef"></i>تغطية</span>
+      <span><i style="--legend:#8e9ef4"></i>سياسة/اقتصاد</span>
     </div>
 
-    <div class="top-actions">
-      <button id="btn-tv" class="icon-btn" title="بث مباشر" aria-label="بث مباشر">📺</button>
-      <button id="btn-theme" class="icon-btn" title="تبديل النمط" aria-label="تبديل النمط">◐</button>
-      <button id="btn-refresh" class="icon-btn" title="تحديث" aria-label="تحديث">⟳</button>
+    <footer class="status-bar glass">
+      <span class="status-brand"><span class="status-dot"></span> تحديث تلقائي</span>
+      <span>الخريطة: GDELT · USGS · NASA EONET</span>
+      <span class="status-note">التغطية الجغرافية استدلالية وليست شاملة</span>
+    </footer>
+
+    <section class="detail-card glass" id="detail" hidden aria-live="polite"></section>
+
+    <div class="modal-backdrop" id="tv-modal" hidden>
+      <section class="tv-dialog glass" role="dialog" aria-modal="true" aria-labelledby="tv-title">
+        <header class="tv-heading">
+          <div>
+            <div class="section-eyebrow"><span class="eyebrow-line"></span> بث من الناشر</div>
+            <h2 id="tv-title">القنوات الإخبارية المباشرة</h2>
+          </div>
+          <button id="tv-close" class="panel-close" type="button" aria-label="إغلاق نافذة البث">×</button>
+        </header>
+        <p class="tv-intro">اختر قناة لبدء مشغلها الرسمي. قد يختلف التوفر حسب البلد وحقوق البث.</p>
+        <div class="tv-channels" id="tv-channels" role="group" aria-label="اختر قناة"></div>
+        <div class="tv-player" id="tv-player">
+          <div class="player-placeholder"><span class="tv-placeholder-icon" aria-hidden="true">▶</span><span>اختر قناة لبدء البث</span></div>
+        </div>
+        <div class="tv-links" id="tv-links"></div>
+        <p class="tv-note">يعمل مشغل واحد في كل مرة، ولا يبدأ الصوت تلقائياً. إذا لم يظهر البث، استخدم رابط الموقع الرسمي.</p>
+      </section>
     </div>
-  </header>
-
-  <nav class="glass filter-bar" id="filters" aria-label="تصفية الطبقات"></nav>
-
-  <aside class="glass side-panel" id="panel">
-    <div class="panel-head">
-      <h2 id="panel-title">آخر الأحداث</h2>
-      <button id="panel-close" class="icon-btn" aria-label="إغلاق">✕</button>
-    </div>
-    <div class="panel-body" id="panel-body"></div>
-  </aside>
-
-  <button class="glass fab" id="panel-open" aria-label="فتح لوحة الأخبار">
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 6h16M4 12h16M4 18h10"/>
-    </svg>
-  </button>
-
-  <div class="loader glass" id="loader">
-    <span class="spinner"></span>
-    <span>جارٍ تحميل الأحداث الحقيقية…</span>
-  </div>
-
-  <div class="glass detail-card" id="detail" hidden></div>
-
-  <!-- ✅ نافذة البث المباشر -->
-  <div class="glass tv-modal" id="tv-modal" hidden>
-    <div class="tv-head">
-      <h2>📺 البث المباشر</h2>
-      <button id="tv-close" class="icon-btn" aria-label="إغلاق">✕</button>
-    </div>
-    <div class="tv-channels" id="tv-channels"></div>
-    <div class="tv-player" id="tv-player">
-      <div class="tv-placeholder">اختر قناة لبدء البث</div>
-    </div>
-    <p class="tv-note">
-      ⚡ يُشغَّل بث واحد فقط في كل مرة لضمان سلاسة العرض. إن استمر التقطيع فاختر جودة أقل (⚙ داخل المشغّل).
-    </p>
-  </div>
-
-  <footer class="glass status-bar" id="status"></footer>
-
+  </main>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
