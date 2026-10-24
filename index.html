@@ -3,58 +3,74 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="خريطة تفاعلية للأحداث والأخبار العاجلة من مصادر عالمية">
-  <title>خريطة أخبار العالم المباشرة</title>
+  <meta name="theme-color" content="#020617">
+  <title>NewsWorld — خريطة الأخبار الحية</title>
 
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <link href="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.js"></script>
+
   <link rel="stylesheet" href="css/style.css">
-
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-  <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <header>
-    <div class="br">
-      <span class="dot" aria-hidden="true"></span>
-      <h1>خريطة أخبار العالم</h1>
+
+  <!-- الخريطة تغطي الشاشة بالكامل -->
+  <div id="map"></div>
+
+  <!-- ===== شريط علوي زجاجي ===== -->
+  <header class="glass top-bar">
+    <div class="brand">
+      <span class="pulse-dot"></span>
+      <h1>NewsWorld</h1>
+      <span class="live-tag">LIVE</span>
     </div>
-    <div class="hr">
-      <span id="upd" aria-live="polite">…</span>
-      <button class="ib" id="lt" title="وضع التوفير" aria-label="تشغيل وضع التوفير">⚡</button>
-      <button class="ib" id="th" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">◐</button>
-      <button class="ib" id="rf" title="تحديث الآن" aria-label="تحديث البيانات الآن">⟳</button>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input id="search" placeholder="ابحث في الأخبار والأماكن…" autocomplete="off">
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-theme" class="icon-btn" title="تبديل النمط" aria-label="تبديل النمط">◐</button>
+      <button id="btn-refresh" class="icon-btn" title="تحديث" aria-label="تحديث">⟳</button>
     </div>
   </header>
 
-  <div class="tk"><div id="tk" aria-live="polite">جارٍ تحميل الأخبار…</div></div>
+  <!-- ===== شريط التصفية الزجاجي ===== -->
+  <nav class="glass filter-bar" id="filters" aria-label="تصفية الطبقات"></nav>
 
-  <div class="wrap">
-    <div class="stats" id="layers" role="toolbar" aria-label="طبقات الأحداث"></div>
-    <details class="st" id="status"></details>
+  <!-- ===== لوحة الأخبار الجانبية (قابلة للطي) ===== -->
+  <aside class="glass side-panel" id="panel">
+    <div class="panel-head">
+      <h2 id="panel-title">آخر الأحداث</h2>
+      <button id="panel-close" class="icon-btn" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="panel-body" id="panel-body"></div>
+  </aside>
 
-    <main>
-      <section>
-        <div id="mapw">
-          <canvas id="cv" role="img" aria-label="خريطة العالم تعرض الأخبار والأحداث"></canvas>
-          <div class="zb">
-            <button id="zi" aria-label="تكبير">+</button>
-            <button id="zo" aria-label="تصغير">−</button>
-            <button id="zr" aria-label="إعادة تعيين">⌂</button>
-          </div>
-          <div class="leg" id="leg" aria-label="مفتاح الخريطة"></div>
-        </div>
-        <div id="card">اضغط على أي نقطة في الخريطة أو أي خبر في القائمة لعرض التفاصيل.</div>
-      </section>
+  <!-- ===== زر فتح اللوحة (يظهر عند إغلاقها) ===== -->
+  <button class="glass fab" id="panel-open" aria-label="فتح لوحة الأخبار">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 6h16M4 12h16M4 18h10"/>
+    </svg>
+  </button>
 
-      <section class="panel">
-        <div class="tabs" id="tabs" role="tablist"></div>
-        <div class="body" id="body"></div>
-      </section>
-    </main>
+  <!-- ===== مؤشر التحميل ===== -->
+  <div class="loader glass" id="loader">
+    <span class="spinner"></span>
+    <span>جارٍ تحميل الأحداث الحقيقية…</span>
   </div>
 
-  <footer id="foot"></footer>
+  <!-- ===== بطاقة التفاصيل العائمة ===== -->
+  <div class="glass detail-card" id="detail" hidden></div>
+
+  <footer class="glass status-bar" id="status"></footer>
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
