@@ -9,6 +9,7 @@ import {
   hideLoader,
   setStatus,
 } from "./ui.js";
+import { initTV } from "./tv.js";
 import { REFRESH_MS } from "./config.js";
 
 let allFeatures = [];
@@ -38,8 +39,9 @@ function applyFilters() {
   renderList(filtered);
 }
 
-// التهيئة
+// ===== التهيئة =====
 initPanel();
+initTV();
 initFilters((type, on) => {
   on ? enabled.add(type) : enabled.delete(type);
   applyFilters();
@@ -63,7 +65,6 @@ document.getElementById("search").addEventListener("input", (e) => {
 document.getElementById("btn-refresh").onclick = load;
 document.getElementById("btn-theme").onclick = () => {
   document.body.classList.toggle("light-theme");
-  // ملاحظة: MapLibre يحتاج إعادة تحميل النمط؛ يمكن إضافة نمط فاتح لاحقاً
 };
 
 // التحميل الأول + التحديث الدوري
