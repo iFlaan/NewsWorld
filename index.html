@@ -9,18 +9,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-
   <link href="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/maplibre-gl@^5/dist/maplibre-gl.js"></script>
-
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- الخريطة تغطي الشاشة بالكامل -->
   <div id="map"></div>
 
-  <!-- ===== شريط علوي زجاجي ===== -->
+  <!-- شريط علوي زجاجي -->
   <header class="glass top-bar">
     <div class="brand">
       <span class="pulse-dot"></span>
@@ -36,15 +33,14 @@
     </div>
 
     <div class="top-actions">
+      <button id="btn-tv" class="icon-btn" title="بث مباشر" aria-label="بث مباشر">📺</button>
       <button id="btn-theme" class="icon-btn" title="تبديل النمط" aria-label="تبديل النمط">◐</button>
       <button id="btn-refresh" class="icon-btn" title="تحديث" aria-label="تحديث">⟳</button>
     </div>
   </header>
 
-  <!-- ===== شريط التصفية الزجاجي ===== -->
   <nav class="glass filter-bar" id="filters" aria-label="تصفية الطبقات"></nav>
 
-  <!-- ===== لوحة الأخبار الجانبية (قابلة للطي) ===== -->
   <aside class="glass side-panel" id="panel">
     <div class="panel-head">
       <h2 id="panel-title">آخر الأحداث</h2>
@@ -53,21 +49,33 @@
     <div class="panel-body" id="panel-body"></div>
   </aside>
 
-  <!-- ===== زر فتح اللوحة (يظهر عند إغلاقها) ===== -->
   <button class="glass fab" id="panel-open" aria-label="فتح لوحة الأخبار">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M4 6h16M4 12h16M4 18h10"/>
     </svg>
   </button>
 
-  <!-- ===== مؤشر التحميل ===== -->
   <div class="loader glass" id="loader">
     <span class="spinner"></span>
     <span>جارٍ تحميل الأحداث الحقيقية…</span>
   </div>
 
-  <!-- ===== بطاقة التفاصيل العائمة ===== -->
   <div class="glass detail-card" id="detail" hidden></div>
+
+  <!-- ✅ نافذة البث المباشر -->
+  <div class="glass tv-modal" id="tv-modal" hidden>
+    <div class="tv-head">
+      <h2>📺 البث المباشر</h2>
+      <button id="tv-close" class="icon-btn" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="tv-channels" id="tv-channels"></div>
+    <div class="tv-player" id="tv-player">
+      <div class="tv-placeholder">اختر قناة لبدء البث</div>
+    </div>
+    <p class="tv-note">
+      ⚡ يُشغَّل بث واحد فقط في كل مرة لضمان سلاسة العرض. إن استمر التقطيع فاختر جودة أقل (⚙ داخل المشغّل).
+    </p>
+  </div>
 
   <footer class="glass status-bar" id="status"></footer>
 
