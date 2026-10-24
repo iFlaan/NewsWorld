@@ -1,188 +1,160 @@
-import { WORLD_URL, L } from "./config.js";
-import { state, isFresh } from "./state.js";
+import { MAP_STYLE, COLORS, LAYERS } from "./config.js";
 
-const W = 960, H = 500;
-const cv = document.getElementById("cv");
-const ctx = cv.getContext("2d");
-const zi = document.getElementById("zi");
-const zo = document.getElementById("zo");
-const zr = document.getElementById("zr");
+let map;
+let onFeatureClick = null;
+const popup = new maplibregl.Popup({
+  closeButton: true,
+  closeOnClick: true,
+  maxWidth: "320px",
+  offset: 12,
+});
 
-let LAND = null;
-let GRAT = null;
-const proj = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], { type: "Sphere" });
-const path = d3.geoPath(proj);
+export function initMap(callback) {
+  onFeatureClick = callback;
 
-const COL = {};
-const M = { b: 1, dpr: 1, w: W, h: H };
-const tr = { x: 0, y: 0, k: 1 };
-let pts = [];
-let raf = 0;
-let onPickCallback = null;
-
-const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-const radiusOf = (i) =>
-  i.type === "quake" ? Math.min(2.5 + i.mag * 0.8, 11)
-  : i.type === "conflict" ? 5.5
-  : 4;
-
-const visible = () => state.items.filter((i) => state.on.has(i.type));
-
-export function needPaint() {
-  if (!raf) raf = requestAnimationFrame(paint);
-}
-
-function paint() {
-  raf = 0;
-  if (!LAND) return; // لم تُحمَّل البيانات بعد
-  if (!COL.land) {
-    COL.land = css("--land");
-    COL.sea = css("--sea");
-    COL.bd = css("--bd");
-    COL.ln = css("--ln");
-  }
-  const s = M.dpr * M.b * tr.k;
-  const q = 1 / (M.b * tr.k);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = COL.sea;
-  ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.setTransform(s, 0, 0, s, M.dpr * tr.x, M.dpr * tr.y);
-  ctx.lineWidth = 0.3 * q;
-  ctx.strokeStyle = COL.ln;
-  ctx.stroke(GRAT);
-  ctx.fillStyle = COL.land;
-  ctx.fill(LAND);
-  ctx.strokeStyle = COL.bd;
-  ctx.lineWidth = 0.5 * q;
-  ctx.stroke(LAND);
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = q;
-  for (const i of pts) {
-    const r = i.r * q;
-    const c = L[i.type][1];
-    ctx.beginPath();
-    ctx.arc(i.px, i.py, r, 0, 6.2832);
-    ctx.globalAlpha = 0.88;
-    ctx.fillStyle = c;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.stroke();
-    if (i.fr) {
-      ctx.beginPath();
-      ctx.arc(i.px, i.py, r * 2.3, 0, 6.2832);
-      ctx.strokeStyle = c;
-      ctx.lineWidth = 1.6 * q;
-      ctx.stroke();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = q;
-    }
-  }
-}
-
-function size() {
-  M.dpr = Math.min(devicePixelRatio || 1, 1.5);
-  M.w = cv.clientWidth || W;
-  M.h = (M.w * H) / W;
-  M.b = M.w / W;
-  cv.width = Math.round(M.w * M.dpr);
-  cv.height = Math.round(M.h * M.dpr);
-  zoom.extent([[0, 0], [M.w, M.h]]).translateExtent([[0, 0], [M.w, M.h]]);
-  needPaint();
-}
-
-const zoom = d3
-  .zoom()
-  .scaleExtent([1, 14])
-  .on("zoom", (e) => {
-    tr.x = e.transform.x;
-    tr.y = e.transform.y;
-    tr.k = e.transform.k;
-    needPaint();
+  map = new maplibregl.Map({
+    container: "map",
+    style: MAP_STYLE,
+    center: [20, 25],
+    zoom: 2,
+    minZoom: 1.2,
+    maxZoom: 12,
+    attributionControl: false,
+    dragRotate: false,
+    pitchWithRotate: false,
   });
-const cs = d3.select(cv);
-cs.call(zoom);
 
-export function draw() {
-  if (!LAND) return;
-  pts = visible().filter((i) => i.lon != null && !i.nomap);
-  for (const i of pts) {
-    if (i.px == null) {
-      const p = proj([i.lon, i.lat]);
-      if (!p || isNaN(p[0])) {
-        i.lon = null;
-        continue;
-      }
-      i.px = p[0];
-      i.py = p[1];
-      i.r = radiusOf(i);
-    }
-    i.fr = isFresh(i);
-  }
-  pts = pts.filter((i) => i.lon != null).sort((a, b) => b.r - a.r);
-  needPaint();
-}
-
-function hitAt(mx, my) {
-  let best = null;
-  let bestDist = Infinity;
-  for (const i of pts) {
-    const dx = tr.x + tr.k * M.b * i.px - mx;
-    const dy = tr.y + tr.k * M.b * i.py - my;
-    const d = dx * dx + dy * dy;
-    const m = Math.max(i.r, 9) + 5;
-    if (d < m * m && d < bestDist) {
-      bestDist = d;
-      best = i;
-    }
-  }
-  return best;
-}
-
-function attachHandlers() {
-  cv.addEventListener("click", (e) => {
-    const r = cv.getBoundingClientRect();
-    const hit = hitAt(e.clientX - r.left, e.clientY - r.top);
-    if (hit && onPickCallback) onPickCallback(hit);
+  map.on("load", () => {
+    addEventLayers();
+    bindClicks();
   });
-  let lastMove = 0;
-  cv.addEventListener("mousemove", (e) => {
-    const now = Date.now();
-    if (now - lastMove < 80) return;
-    lastMove = now;
-    const r = cv.getBoundingClientRect();
-    const hit = hitAt(e.clientX - r.left, e.clientY - r.top);
-    cv.title = hit ? hit.title : "";
-    cv.style.cursor = hit ? "pointer" : "grab";
+
+  return map;
+}
+
+function addEventLayers() {
+  // مصدر GeoJSON موحّد لكل الأحداث
+  map.addSource("events", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+    cluster: true,
+    clusterMaxZoom: 8,
+    clusterRadius: 50,
+  });
+
+  // دوائر التجميع
+  map.addLayer({
+    id: "clusters",
+    type: "circle",
+    source: "events",
+    filter: ["has", "point_count"],
+    paint: {
+      "circle-color": "#38bdf8",
+      "circle-radius": ["step", ["get", "point_count"], 14, 10, 20, 50, 28],
+      "circle-opacity": 0.85,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "rgba(255,255,255,0.25)",
+    },
+  });
+
+  // عدد النقاط داخل التجميع
+  map.addLayer({
+    id: "cluster-count",
+    type: "symbol",
+    source: "events",
+    filter: ["has", "point_count"],
+    layout: {
+      "text-field": "{point_count_abbreviated}",
+      "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+      "text-size": 12,
+    },
+    paint: { "text-color": "#020617" },
+  });
+
+  // النقاط الفردية (ألوان حسب النوع)
+  map.addLayer({
+    id: "unclustered",
+    type: "circle",
+    source: "events",
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": [
+        "match", ["get", "type"],
+        "conflict", COLORS.conflict,
+        "protest", COLORS.protest,
+        "quake", COLORS.quake,
+        "disaster", COLORS.disaster,
+        "news", COLORS.news,
+        COLORS.other,
+      ],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 4, 8, 9],
+      "circle-stroke-width": 1.5,
+      "circle-stroke-color": "rgba(255,255,255,0.6)",
+      "circle-opacity": 0.92,
+    },
+  });
+
+  // تأثير التوهج للنقاط الجديدة
+  map.addLayer({
+    id: "glow",
+    type: "circle",
+    source: "events",
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": "#38bdf8",
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 12, 8, 24],
+      "circle-opacity": 0.12,
+      "circle-blur": 1,
+    },
   });
 }
 
-export function focusOn(item) {
-  if (item.lon == null || item.px == null) return;
-  const k = Math.max(tr.k, 3.5);
-  cs.transition()
-    .duration(500)
-    .call(
-      zoom.transform,
-      d3.zoomIdentity
-        .translate(M.w / 2 - k * M.b * item.px, M.h / 2 - k * M.b * item.py)
-        .scale(k)
-    );
+function bindClicks() {
+  // النقر على نقطة فردية
+  map.on("click", "unclustered", (e) => {
+    const f = e.features[0];
+    const p = f.properties;
+    const coords = f.geometry.coordinates.slice();
+    popup
+      .setLngLat(coords)
+      .setHTML(`
+        <div style="font-family:Cairo,sans-serif">
+          <strong style="display:block;margin-bottom:6px;font-size:14px">${p.title || "حدث"}</strong>
+          <div style="color:#94a3b8;font-size:12px;margin-bottom:8px">
+            ${p.place || ""} ${p.time ? "· " + new Date(+p.time).toLocaleString("ar") : ""}
+          </div>
+          ${p.desc ? `<div style="font-size:12px;color:#cbd5e1;margin-bottom:8px">${p.desc}</div>` : ""}
+          ${p.url ? `<a href="${p.url}" target="_blank" rel="noopener" style="color:#38bdf8;font-size:12px">فتح المصدر ↗</a>` : ""}
+        </div>
+      `)
+      .addTo(map);
+
+    if (onFeatureClick) onFeatureClick(p);
+  });
+
+  // النقر على تجميع → تكبير
+  map.on("click", "clusters", (e) => {
+    const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
+    const clusterId = features[0].properties.cluster_id;
+    map.getSource("events").getClusterExpansionZoom(clusterId, (err, zoom) => {
+      if (err) return;
+      map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom + 0.5 });
+    });
+  });
+
+  map.on("mouseenter", "unclustered", () => (map.getCanvas().style.cursor = "pointer"));
+  map.on("mouseleave", "unclustered", () => (map.getCanvas().style.cursor = ""));
 }
 
-export async function initMap(onPick) {
-  onPickCallback = onPick;
+// تحديث بيانات الخريطة
+export function setEvents(features) {
+  const src = map.getSource("events");
+  if (src) src.setData({ type: "FeatureCollection", features });
+}
 
-  const world = await fetch(WORLD_URL).then((r) => r.json());
-  LAND = new Path2D(path(topojson.feature(world, world.objects.countries)));
-  GRAT = new Path2D(path(d3.geoGraticule10()));
+// تركيز الخريطة على موقع
+export function flyTo(lon, lat, zoom = 6) {
+  map.flyTo({ center: [lon, lat], zoom, essential: true });
+}
 
-  attachHandlers();
-  zi.onclick = () => cs.transition().call(zoom.scaleBy, 1.7);
-  zo.onclick = () => cs.transition().call(zoom.scaleBy, 1 / 1.7);
-  zr.onclick = () => cs.transition().call(zoom.transform, d3.zoomIdentity);
-
-  if (window.ResizeObserver) new ResizeObserver(size).observe(cv);
-  else addEventListener("resize", size);
-  size();
-    } 
+export { map };
