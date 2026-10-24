@@ -215,16 +215,3 @@ git push origin feature/اسم-الميزة
 ⭐ إذا أعجبك المشروع، لا تنسَ إضافة نجمة على GitHub!
 
 </div>
-```
-
----
-
-📌 ملاحظات على الـ README
-
-1. غيّر رابط العرض المباشر من https://iflaan.github.io/NewsWorld/ إلى رابطك النهائي بعد تفعيل GitHub Pages (إذا كان مختلفاً).
-2. أضف ملف LICENSE بجانب README — يمكنك توليده من choosealicense.com أو نسخ نص MIT القياسي.
-3. أضف لقطة شاشة لاحقاً (اختياري): ضع صورة باسم screenshot.png في المستودع وأضفها في بداية README:
-   ```markdown
-   ![لقطة من التطبيق](screenshot.png)
-   ```
-4. شارات (Badges): يمكنك إضافة شارات إضافية من shields.io مثل آخر commit، أو عدد المساهمين، أو حجم الكود.
