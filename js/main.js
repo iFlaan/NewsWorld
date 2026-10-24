@@ -1,94 +1,71 @@
-import { FAST, SLOW } from "./config.js";
-import { state } from "./state.js";
-import { initMap } from "./map.js";
+import { fetchAllEvents } from "./api.js";
+import { initMap, setEvents } from "./map.js";
 import {
-  initLayers,
-  initTabs,
-  buildPanel,
-  refreshAll,
-  initFooter,
-  pick,
-  startTickerRotation,
+  initFilters,
+  updateCounts,
+  renderList,
+  showDetail,
+  initPanel,
+  hideLoader,
+  setStatus,
 } from "./ui.js";
-import {
-  setOnRefresh,
-  runSources,
-  FAST_NAMES,
-  SLOW_NAMES,
-} from "./api.js";
+import { REFRESH_MS } from "./config.js";
 
-const lt = document.getElementById("lt");
-const th = document.getElementById("th");
-const rf = document.getElementById("rf");
+let allFeatures = [];
+const enabled = new Set(["conflict", "protest", "quake", "disaster", "news", "other"]);
 
-async function boot() {
-  initFooter();
-  initLayers();
-  initTabs();
-  buildPanel();
-  startTickerRotation();
-
-  // ربط دورة التحديث بدالة الواجهة
-  setOnRefresh(refreshAll);
-
-  // انتظر تحميل الخريطة قبل بدء الجلب
-  await initMap(pick);
-
-  // أول تحميل شامل
-  await runSources([...FAST_NAMES, ...SLOW_NAMES]);
-  state.ready = true;
-  state.born = Date.now();
-  refreshAll();
-
-  // التحديث الدوري
-  setInterval(() => runSources(FAST_NAMES), FAST);
-  setInterval(() => runSources(SLOW_NAMES), SLOW);
+async function load() {
+  try {
+    const { features, status } = await fetchAllEvents();
+    allFeatures = features;
+    applyFilters();
+    updateCounts(features);
+    setStatus(
+      Object.entries(status)
+        .map(([k, v]) => (v < 0 ? `<span class="bad">✗ ${k}</span>` : `<span class="ok">✓ ${k} (${v})</span>`))
+        .join(" · ")
+    );
+    hideLoader();
+  } catch (e) {
+    console.error(e);
+    setStatus(`<span class="bad">تعذر تحميل البيانات — تحقق من الاتصال</span>`);
+  }
 }
 
-// ================= أزرار التحكم =================
-rf.onclick = () => runSources([...FAST_NAMES, ...SLOW_NAMES]);
+function applyFilters() {
+  const filtered = allFeatures.filter((f) => enabled.has(f.properties.type));
+  setEvents(filtered);
+  renderList(filtered);
+}
 
-lt.onclick = () => {
-  lt.classList.toggle("on");
-  document.body.classList.toggle("lite", lt.classList.contains("on") || state.playing);
-};
-
-th.onclick = () => {
-  const r = document.documentElement;
-  const isDark =
-    (r.dataset.theme ||
-      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
-  r.dataset.theme = isDark ? "light" : "dark";
-  // أعد رسم الخريطة لتحديث الألوان
-  import("./map.js").then((m) => m.draw && m.draw());
-  // في الواقع أعد تعيين ألوان الخريطة
-  import("./state.js").then(() => {
-    // نستخدم حدثًا بسيطًا لإعادة التلوين
-    document.dispatchEvent(new Event("theme:changed"));
-  });
-};
-
-document.addEventListener("theme:changed", async () => {
-  // مسح ألوان الخريطة المخزنة وإعادة الرسم
-  const { draw } = await import("./map.js");
-  // إعادة تحميل الألوان
-  document.documentElement.style.setProperty("--_themeTick", Date.now());
-  draw();
+// التهيئة
+initPanel();
+initFilters((type, on) => {
+  on ? enabled.add(type) : enabled.delete(type);
+  applyFilters();
 });
 
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    if (state.dirty && !state.playing) {
-      state.dirty = false;
-      refreshAll();
-    }
-    document.title = "خريطة أخبار العالم المباشرة";
-    state.newc = 0;
-  }
+initMap((props) => showDetail(props));
+
+// البحث
+document.getElementById("search").addEventListener("input", (e) => {
+  const q = e.target.value.toLowerCase().trim();
+  const filtered = allFeatures.filter(
+    (f) =>
+      enabled.has(f.properties.type) &&
+      (!q || (f.properties.title + " " + f.properties.place).toLowerCase().includes(q))
+  );
+  setEvents(filtered);
+  renderList(filtered);
 });
 
-boot().catch((err) => {
-  console.error("فشل بدء التطبيق:", err);
-  document.getElementById("body").innerHTML =
-    `<div class="note" style="color:#e5484d">تعذّر تحميل التطبيق. تحقق من الاتصال بالإنترنت وأعد تحميل الصفحة.</div>`;
-}); 
+// أزرار التحكم
+document.getElementById("btn-refresh").onclick = load;
+document.getElementById("btn-theme").onclick = () => {
+  document.body.classList.toggle("light-theme");
+  // ملاحظة: MapLibre يحتاج إعادة تحميل النمط؛ يمكن إضافة نمط فاتح لاحقاً
+};
+
+// التحميل الأول + التحديث الدوري
+load();
+setInterval(load, REFRESH_MS);
