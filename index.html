@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="خريطة تفاعلية للأحداث والأخبار العاجلة من مصادر عالمية">
+  <title>خريطة أخبار العالم المباشرة</title>
+
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <header>
+    <div class="br">
+      <span class="dot" aria-hidden="true"></span>
+      <h1>خريطة أخبار العالم</h1>
+    </div>
+    <div class="hr">
+      <span id="upd" aria-live="polite">…</span>
+      <button class="ib" id="lt" title="وضع التوفير" aria-label="تشغيل وضع التوفير">⚡</button>
+      <button class="ib" id="th" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">◐</button>
+      <button class="ib" id="rf" title="تحديث الآن" aria-label="تحديث البيانات الآن">⟳</button>
+    </div>
+  </header>
+
+  <div class="tk"><div id="tk" aria-live="polite">جارٍ تحميل الأخبار…</div></div>
+
+  <div class="wrap">
+    <div class="stats" id="layers" role="toolbar" aria-label="طبقات الأحداث"></div>
+    <details class="st" id="status"></details>
+
+    <main>
+      <section>
+        <div id="mapw">
+          <canvas id="cv" role="img" aria-label="خريطة العالم تعرض الأخبار والأحداث"></canvas>
+          <div class="zb">
+            <button id="zi" aria-label="تكبير">+</button>
+            <button id="zo" aria-label="تصغير">−</button>
+            <button id="zr" aria-label="إعادة تعيين">⌂</button>
+          </div>
+          <div class="leg" id="leg" aria-label="مفتاح الخريطة"></div>
+        </div>
+        <div id="card">اضغط على أي نقطة في الخريطة أو أي خبر في القائمة لعرض التفاصيل.</div>
+      </section>
+
+      <section class="panel">
+        <div class="tabs" id="tabs" role="tablist"></div>
+        <div class="body" id="body"></div>
+      </section>
+    </main>
+  </div>
+
+  <footer id="foot"></footer>
+</body>
+</html>
