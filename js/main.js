@@ -7,7 +7,6 @@ import {
   initFilters,
   initPanel,
   initTabs,
-  initTV,
   renderEvents,
   renderFilters,
   renderList,
@@ -19,6 +18,7 @@ import {
   showDetail,
   updateCounts,
 } from "./ui.js";
+import { initTV } from "./tv.js";
 
 let articles = [];
 let features = [];
